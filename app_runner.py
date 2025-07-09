@@ -22,8 +22,31 @@ def open_browser():
     time.sleep(2)  # Wait for server to start
     webbrowser.open("http://localhost:8000")
 
+def run_demucs():
+    """Run demucs with the provided arguments"""
+    import subprocess
+    
+    # Get the original arguments: ["-m", "demucs", "-n", "htdemucs", "-o", "output_dir", "input_file"]
+    demucs_args = sys.argv[1:]  # Skip script name
+    
+    # Build the command: python -m demucs [remaining args after -m demucs]
+    cmd = ["python", "-m", "demucs"] + demucs_args[2:]  # Skip "-m" and "demucs"
+    print(f"Running: {' '.join(cmd)}")
+    
+    try:
+        result = subprocess.run(cmd, capture_output=False)
+        sys.exit(result.returncode)
+    except Exception as e:
+        print(f"Error running demucs: {e}")
+        sys.exit(1)
+
 def main():
     """Main entry point for the executable"""
+    # Check if we're being called with demucs arguments
+    if len(sys.argv) > 1 and (sys.argv[1] == "-m" and len(sys.argv) > 2 and sys.argv[2] == "demucs"):
+        run_demucs()
+        return
+    
     print("=" * 60)
     print("🎵 Stem Separator - Audio Source Separation Tool")
     print("=" * 60)
