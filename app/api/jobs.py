@@ -4,7 +4,7 @@ Job management endpoints
 from typing import List
 from fastapi import APIRouter, HTTPException
 
-from app.services.job_manager import job_manager
+from app.services.db_job_service import db_job_service
 from app.models.audio import JobInfo, JobStatus
 
 router = APIRouter()
@@ -14,7 +14,7 @@ async def get_job_status(job_id: str):
     """
     Get the status of a processing job.
     """
-    job = job_manager.get_job(job_id)
+    job = await db_job_service.get_job(job_id)
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
     
@@ -43,10 +43,7 @@ async def list_jobs(
     - **limit**: Maximum number of jobs to return
     - **offset**: Number of jobs to skip
     """
-    jobs = job_manager.list_jobs(status=status)
-    
-    # Apply pagination
-    paginated_jobs = jobs[offset:offset + limit]
+    jobs = await db_job_service.list_jobs(status=status, limit=limit, offset=offset)
     
     return [
         JobInfo(
@@ -56,7 +53,7 @@ async def list_jobs(
             created_at=job["created_at"],
             updated_at=job.get("updated_at")
         )
-        for job in paginated_jobs
+        for job in jobs
     ]
 
 @router.post("/{job_id}/cancel")
@@ -64,7 +61,7 @@ async def cancel_job(job_id: str):
     """
     Cancel a pending or processing job.
     """
-    job = job_manager.get_job(job_id)
+    job = await db_job_service.get_job(job_id)
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
     
@@ -74,6 +71,6 @@ async def cancel_job(job_id: str):
             detail=f"Cannot cancel job with status: {job['status']}"
         )
     
-    job_manager.update_job(job_id, status="cancelled", message="Job cancelled by user")
+    await db_job_service.update_job(job_id, status="cancelled", message="Job cancelled by user")
     
     return {"message": "Job cancelled successfully"} 

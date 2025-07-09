@@ -11,7 +11,7 @@ from fastapi.responses import FileResponse
 
 from app.core.config import settings
 from app.services.audio_processor import AudioProcessor
-from app.services.job_manager import job_manager
+from app.services.db_job_service import db_job_service
 from app.models.audio import (
     ProcessingResponse,
     StemInfo,
@@ -62,7 +62,7 @@ async def upload_audio(
             f.write(content)
         
         # Create job with uploaded status
-        job = job_manager.create_job(
+        job = await db_job_service.create_job(
             job_id=job_id,
             filename=file.filename,
             file_path=str(temp_path),
@@ -70,7 +70,7 @@ async def upload_audio(
         )
         
         # Update job status to uploaded
-        job_manager.update_job(
+        await db_job_service.update_job(
             job_id,
             status=ProcessingStatus.PENDING,
             message="File uploaded successfully. Ready to process.",
@@ -100,7 +100,7 @@ async def start_processing(
     
     - **job_id**: The job ID from upload
     """
-    job = job_manager.get_job(job_id)
+    job = await db_job_service.get_job(job_id)
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
     
@@ -123,7 +123,7 @@ async def start_processing(
     )
     
     # Update job status to processing
-    job_manager.update_job(
+    await db_job_service.update_job(
         job_id,
         status=ProcessingStatus.PROCESSING,
         message="Processing started...",
@@ -179,7 +179,7 @@ async def process_audio(
             f.write(content)
         
         # Create job
-        job = job_manager.create_job(
+        job = await db_job_service.create_job(
             job_id=job_id,
             filename=file.filename,
             file_path=str(temp_path),
@@ -212,7 +212,7 @@ async def list_stems(job_id: str):
     """
     List available stems for a completed job.
     """
-    job = job_manager.get_job(job_id)
+    job = await db_job_service.get_job(job_id)
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
     
@@ -222,18 +222,8 @@ async def list_stems(job_id: str):
             detail=f"Job is not completed. Current status: {job['status']}"
         )
     
-    output_dir = Path(job["output_dir"])
-    if not output_dir.exists():
-        raise HTTPException(status_code=404, detail="Output directory not found")
-    
-    stems = []
-    for stem_file in output_dir.glob("*.wav"):
-        stem_name = stem_file.stem
-        stems.append({
-            "name": stem_name,
-            "filename": stem_file.name,
-            "size": stem_file.stat().st_size
-        })
+    # Get stems from database
+    stems = await db_job_service.get_stems(job_id)
     
     return {"stems": stems}
 
@@ -245,7 +235,7 @@ async def download_stem(job_id: str, stem_name: str):
     - **job_id**: The job ID from processing
     - **stem_name**: Name of the stem (vocals, drums, bass, other)
     """
-    job = job_manager.get_job(job_id)
+    job = await db_job_service.get_job(job_id)
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
     
@@ -255,12 +245,23 @@ async def download_stem(job_id: str, stem_name: str):
             detail=f"Job is not completed. Current status: {job['status']}"
         )
     
-    # Construct file path
-    output_dir = Path(job["output_dir"])
-    stem_file = output_dir / f"{stem_name}.wav"
+    # Get stems from database to find the file path
+    stems = await db_job_service.get_stems(job_id)
+    stem_info = next((s for s in stems if s['name'] == stem_name), None)
+    
+    if not stem_info:
+        raise HTTPException(status_code=404, detail=f"Stem '{stem_name}' not found")
+    
+    # Use the file path from the database or fallback to constructed path
+    stem_file = Path(stem_info.get('file_path')) if 'file_path' in stem_info else None
+    
+    # Fallback to constructed path if file_path not available
+    if not stem_file or not stem_file.exists():
+        output_dir = Path(job["output_dir"])
+        stem_file = output_dir / f"{stem_name}.wav"
     
     if not stem_file.exists():
-        raise HTTPException(status_code=404, detail=f"Stem '{stem_name}' not found")
+        raise HTTPException(status_code=404, detail=f"Stem file '{stem_name}' not found")
     
     # Create proper filename: original_filename_stem.wav
     original_filename = Path(job["filename"]).stem  # Remove extension
@@ -282,7 +283,7 @@ async def delete_job(job_id: str):
     
     - **job_id**: The job ID to delete
     """
-    job = job_manager.get_job(job_id)
+    job = await db_job_service.get_job(job_id)
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
     
@@ -297,7 +298,10 @@ async def delete_job(job_id: str):
             import shutil
             shutil.rmtree(output_dir)
     
-    # Delete job
-    job_manager.delete_job(job_id)
+    # Delete job from database
+    success = await db_job_service.delete_job(job_id)
+    
+    if not success:
+        raise HTTPException(status_code=404, detail="Job not found")
     
     return {"message": "Job deleted successfully"} 

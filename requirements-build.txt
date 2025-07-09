@@ -1,3 +1,9 @@
-# Build dependencies for creating executable
-pyinstaller==6.11.1
-auto-py-to-exe==2.46.0 
+# Build dependencies
+pyinstaller==6.3.0
+setuptools==75.3.0
+
+# Database dependencies for build
+sqlalchemy==2.0.23
+aiosqlite==0.20.0
+greenlet==3.2.3
+alembic==1.13.2 

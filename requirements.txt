@@ -1,11 +1,17 @@
 # Audio Processing
 demucs==4.0.1
 
-# Web Framework (for later)
+# Web Framework
 fastapi==0.115.0
 uvicorn[standard]==0.30.6
 python-multipart==0.0.9
 pydantic-settings==2.7.1
+
+# Database
+sqlalchemy==2.0.23
+aiosqlite==0.20.0
+alembic==1.13.2
+greenlet==3.2.3
 
 # Development
 python-dotenv==1.0.1

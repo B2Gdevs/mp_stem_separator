@@ -10,7 +10,7 @@ from pathlib import Path
 from typing import Optional
 
 from app.core.config import settings
-from app.services.job_manager import job_manager
+from app.services.db_job_service import db_job_service
 from app.models.audio import ProcessingStatus
 
 class AudioProcessor:
@@ -43,7 +43,7 @@ class AudioProcessor:
         """
         try:
             # Update job status
-            job_manager.update_job(
+            await db_job_service.update_job(
                 job_id,
                 status=ProcessingStatus.PROCESSING,
                 message="Starting audio processing...",
@@ -67,7 +67,7 @@ class AudioProcessor:
                 cmd.extend(["-d", settings.device])
             
             # Update progress
-            job_manager.update_job(
+            await db_job_service.update_job(
                 job_id,
                 progress=5,
                 message="Running stem separation..."
@@ -95,7 +95,7 @@ class AudioProcessor:
                     progress = self._parse_progress(stderr_line.strip())
                     if progress is not None and progress > last_progress:
                         last_progress = progress
-                        job_manager.update_job(
+                        await db_job_service.update_job(
                             job_id,
                             progress=min(95, progress),  # Cap at 95% until completion
                             message=f"Processing stems... {progress:.0f}%"
@@ -108,7 +108,7 @@ class AudioProcessor:
                 raise Exception(f"Demucs failed: {stderr}")
             
             # Update progress to 98% for file organization
-            job_manager.update_job(
+            await db_job_service.update_job(
                 job_id,
                 progress=98,
                 message="Organizing output files..."
@@ -127,8 +127,22 @@ class AudioProcessor:
             if not stem_dir:
                 raise Exception("No output directory found")
             
+            # Create stem records in database
+            stems_data = []
+            for stem_file in stem_dir.glob("*.wav"):
+                stems_data.append({
+                    'name': stem_file.stem,
+                    'filename': stem_file.name,
+                    'file_path': str(stem_file),
+                    'file_size': stem_file.stat().st_size
+                })
+            
+            # Save stems to database
+            if stems_data:
+                await db_job_service.create_stems(job_id, stems_data)
+            
             # Update job with completion
-            job_manager.update_job(
+            await db_job_service.update_job(
                 job_id,
                 status=ProcessingStatus.COMPLETED,
                 progress=100,
@@ -142,7 +156,7 @@ class AudioProcessor:
                 
         except Exception as e:
             # Update job with error
-            job_manager.update_job(
+            await db_job_service.update_job(
                 job_id,
                 status=ProcessingStatus.FAILED,
                 error=str(e),
