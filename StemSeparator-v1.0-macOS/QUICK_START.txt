@@ -1,0 +1,36 @@
+🎵 STEM SEPARATOR - QUICK START GUIDE
+====================================
+
+WHAT IT DOES:
+Separates audio files into individual stems (vocals, drums, bass, other instruments)
+
+HOW TO START:
+1. Double-click "Start Stem Separator.command"
+2. Your web browser will open automatically
+3. Drag & drop an audio file or click "Choose File"
+4. Wait for processing to complete
+5. Download your separated stems!
+
+EXAMPLE FILES:
+Try the included example file in the "example_tracks" folder
+
+SUPPORTED FORMATS:
+WAV, MP3, FLAC, OGG, M4A (up to 500MB)
+
+THEMES:
+Click the palette icon (🎨) in the top-right to change themes
+
+NEED HELP?
+See README.md for detailed instructions
+
+SYSTEM REQUIREMENTS:
+- macOS 10.13+
+- 4GB RAM (8GB recommended)
+- 2GB free disk space
+
+PRIVACY:
+All processing happens locally on your computer.
+No internet required, no data uploaded anywhere.
+
+====================================
+Version 1.0 | January 2025 

@@ -1,0 +1,59 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+.venv
+*.egg-info/
+dist/
+build/
+
+# Demucs outputs
+separated/
+*.wav
+*.mp3
+*.flac
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# Environment variables
+.env
+.env.local
+
+# Logs
+*.log
+logs/
+
+# Node.js (for React later)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# React build
+frontend/build/
+frontend/dist/
+
+# Testing
+.coverage
+.pytest_cache/
+htmlcov/
+
+# Database
+*.db
+*.sqlite3
+
+# Temporary files
+*.tmp
+temp/
+tmp/ 
