@@ -7,10 +7,11 @@ from pathlib import Path
 from typing import List
 
 from fastapi import APIRouter, File, UploadFile, HTTPException, BackgroundTasks
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, StreamingResponse
+from sse_starlette.sse import EventSourceResponse
 
 from app.core.config import settings
-from app.services.audio_processor import AudioProcessor
+from app.services.audio_processor import AudioProcessor, log_capture
 from app.services.db_job_service import db_job_service
 from app.models.audio import (
     ProcessingResponse,
@@ -304,4 +305,129 @@ async def delete_job(job_id: str):
     if not success:
         raise HTTPException(status_code=404, detail="Job not found")
     
-    return {"message": "Job deleted successfully"} 
+    return {"message": "Job deleted successfully"}
+
+@router.get("/logs/{job_id}")
+async def get_job_logs(job_id: str):
+    """
+    Get all logs for a specific job.
+    
+    - **job_id**: The job ID to get logs for
+    """
+    job = await db_job_service.get_job(job_id)
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+    
+    logs = log_capture.get_logs(job_id)
+    return {
+        "job_id": job_id,
+        "logs": logs,
+        "total_logs": len(logs)
+    }
+
+@router.delete("/logs/{job_id}")
+async def clear_job_logs(job_id: str):
+    """
+    Clear logs for a specific job.
+    
+    - **job_id**: The job ID to clear logs for
+    """
+    job = await db_job_service.get_job(job_id)
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+    
+    log_capture.clear_logs(job_id)
+    return {"message": f"Logs cleared for job {job_id}"}
+
+@router.get("/logs/{job_id}/latest")
+async def get_latest_logs(job_id: str, limit: int = 50):
+    """
+    Get the latest logs for a specific job.
+    
+    - **job_id**: The job ID to get logs for
+    - **limit**: Number of latest log entries to return (default: 50)
+    """
+    job = await db_job_service.get_job(job_id)
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+    
+    all_logs = log_capture.get_logs(job_id)
+    latest_logs = all_logs[-limit:] if len(all_logs) > limit else all_logs
+    
+    return {
+        "job_id": job_id,
+        "logs": latest_logs,
+        "total_logs": len(all_logs),
+        "showing": len(latest_logs)
+    }
+
+@router.get("/logs/{job_id}/stream")
+async def stream_job_logs(job_id: str):
+    """
+    Stream logs for a specific job using Server-Sent Events (SSE).
+    
+    - **job_id**: The job ID to stream logs for
+    """
+    import asyncio
+    import json
+    from datetime import datetime
+    
+    job = await db_job_service.get_job(job_id)
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+    
+    async def log_generator():
+        last_log_count = 0
+        max_iterations = 600  # 5 minutes max (600 * 0.5 seconds)
+        iteration = 0
+        
+        # Send initial connection confirmation
+        yield {
+            "event": "connected",
+            "data": json.dumps({"job_id": job_id, "message": "Log stream connected"})
+        }
+        
+        while iteration < max_iterations:
+            try:
+                # Get current logs
+                current_logs = log_capture.get_logs(job_id)
+                
+                # Send new logs since last check
+                if len(current_logs) > last_log_count:
+                    new_logs = current_logs[last_log_count:]
+                    for log_entry in new_logs:
+                        yield {
+                            "event": "log",
+                            "data": json.dumps(log_entry)
+                        }
+                    last_log_count = len(current_logs)
+                
+                # Check if job is complete
+                job_status = await db_job_service.get_job(job_id)
+                if job_status and job_status.get("status") in ["completed", "failed"]:
+                    # Send final status and stop streaming
+                    yield {
+                        "event": "status",
+                        "data": json.dumps({"status": job_status.get("status"), "message": "Job completed"})
+                    }
+                    break
+                
+                # Send heartbeat every 10 iterations (5 seconds)
+                if iteration % 10 == 0:
+                    yield {
+                        "event": "heartbeat",
+                        "data": json.dumps({"timestamp": datetime.now().isoformat(), "logs_count": len(current_logs)})
+                    }
+                
+                # Wait before next check - more frequent for active processing
+                await asyncio.sleep(0.2)  # Check 5 times per second for immediate updates
+                iteration += 1
+                
+            except Exception as e:
+                yield {
+                    "event": "error", 
+                    "data": json.dumps({"error": str(e)})
+                }
+                break
+    
+    return EventSourceResponse(log_generator()) 
