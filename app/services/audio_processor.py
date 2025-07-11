@@ -167,7 +167,7 @@ class AudioProcessor:
                         if line:
                             stderr_lines.append(line)
                             self.log_capture.add_log(job_id, "STDERR", line)
-                            
+                        
                             # Parse progress from stderr
                             progress = self._parse_progress(line)
                             if progress is not None and progress > last_progress:

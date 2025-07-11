@@ -17,7 +17,7 @@ greenlet==3.2.3
 python-dotenv==1.0.1
 
 # Additional Audio Processing
-soundfile==0.13.1
+soundfile==0.13.1 
 
 # Server-Sent Events
 sse-starlette==1.6.5 

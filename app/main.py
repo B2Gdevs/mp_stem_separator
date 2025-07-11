@@ -50,28 +50,50 @@ async def health_check():
     """Health check endpoint"""
     return {"status": "healthy", "service": "stem-separator"}
 
-# Serve React static files
+# Serve Next.js static files
 frontend_path = Path(__file__).parent.parent / "frontend" / "build"
 
 if frontend_path.exists():
-    # Mount static files
-    app.mount("/static", StaticFiles(directory=frontend_path / "static"), name="static")
+    # Mount static assets (_next folder, etc.)
+    if (frontend_path / "_next").exists():
+        app.mount("/_next", StaticFiles(directory=frontend_path / "_next"), name="nextjs_assets")
+    
+    # Mount any other static assets
+    static_dirs = ["images", "icons", "static"]
+    for static_dir in static_dirs:
+        static_path = frontend_path / static_dir
+        if static_path.exists():
+            app.mount(f"/{static_dir}", StaticFiles(directory=static_path), name=static_dir)
     
     @app.get("/{full_path:path}")
-    async def serve_react_app(request: Request, full_path: str):
+    async def serve_nextjs_app(request: Request, full_path: str):
         """
-        Serve React app for all non-API routes
+        Serve Next.js app for all non-API routes
         """
         # Don't interfere with API routes
         if full_path.startswith("api/") or full_path == "health":
             return {"error": "Not found"}
+        
+        # Handle root path
+        if full_path == "" or full_path == "/":
+            return FileResponse(frontend_path / "index.html")
         
         # Try to serve specific file first
         file_path = frontend_path / full_path
         if file_path.is_file():
             return FileResponse(file_path)
         
-        # Default to index.html for SPA routing
+        # Try with .html extension for Next.js static export
+        html_file_path = frontend_path / f"{full_path}.html"
+        if html_file_path.is_file():
+            return FileResponse(html_file_path)
+        
+        # Try index.html in subdirectory
+        index_path = frontend_path / full_path / "index.html"
+        if index_path.is_file():
+            return FileResponse(index_path)
+        
+        # Default to root index.html for SPA routing
         return FileResponse(frontend_path / "index.html")
 
 else:
