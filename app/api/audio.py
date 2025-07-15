@@ -289,15 +289,34 @@ async def delete_job(job_id: str):
         raise HTTPException(status_code=404, detail="Job not found")
     
     # Clean up files
-    file_path = Path(job["file_path"])
-    if file_path.exists():
-        file_path.unlink()
+    try:
+        file_path = Path(job["file_path"])
+        if file_path.exists():
+            file_path.unlink()
+            print(f"Deleted original file: {file_path}")
+    except Exception as e:
+        print(f"Error deleting original file: {e}")
     
-    if job.get("output_dir"):
-        output_dir = Path(job["output_dir"])
-        if output_dir.exists():
+    # Clean up output directory (separated files)
+    try:
+        # Delete the entire job directory, not just the output_dir
+        job_dir = settings.output_dir / job_id
+        if job_dir.exists():
             import shutil
-            shutil.rmtree(output_dir)
+            shutil.rmtree(job_dir)
+            print(f"Deleted job directory: {job_dir}")
+        else:
+            print(f"Job directory not found: {job_dir}")
+            
+        # Also try to delete using the output_dir path if it exists and is different
+        if job.get("output_dir"):
+            output_dir = Path(job["output_dir"])
+            if output_dir.exists() and output_dir != job_dir:
+                import shutil
+                shutil.rmtree(output_dir)
+                print(f"Deleted output directory: {output_dir}")
+    except Exception as e:
+        print(f"Error deleting directories: {e}")
     
     # Delete job from database
     success = await db_job_service.delete_job(job_id)

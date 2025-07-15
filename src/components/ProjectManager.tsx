@@ -57,7 +57,6 @@ export function ProjectManager() {
     }
   ]);
 
-  const { data: allJobs } = useJobs();
 
   const handleCreateProject = () => {
     const newProject: Project = {
