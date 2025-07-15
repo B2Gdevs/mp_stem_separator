@@ -10,7 +10,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import settings
 from app.core.database import init_db, close_db
-from app.api import audio, jobs
+from app.api import audio, jobs, dev
 
 # Create FastAPI app
 app = FastAPI(
@@ -31,6 +31,7 @@ app.add_middleware(
 # Include API routers
 app.include_router(audio.router, prefix="/api/audio", tags=["audio"])
 app.include_router(jobs.router, prefix="/api/jobs", tags=["jobs"])
+app.include_router(dev.router, prefix="/api/dev", tags=["development"])
 
 # Database lifecycle events
 @app.on_event("startup")
