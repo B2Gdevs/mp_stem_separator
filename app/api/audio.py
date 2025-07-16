@@ -277,6 +277,62 @@ async def download_stem(job_id: str, stem_name: str):
         }
     )
 
+@router.get("/download/{job_id}")
+async def download_all_stems(job_id: str):
+    """
+    Download all stems for a job.
+    
+    - **job_id**: The job ID from processing
+    """
+    job = await db_job_service.get_job(job_id)
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+    
+    if job["status"] != ProcessingStatus.COMPLETED:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Job is not completed. Current status: {job['status']}"
+        )
+    
+    # Get stems from database to find the file path
+    stems = await db_job_service.get_stems(job_id)
+    if not stems:
+        raise HTTPException(status_code=404, detail="No stems found")
+    
+    # Create a zip file containing all stems
+    import io
+    import zipfile
+    
+    zip_buffer = io.BytesIO()
+    with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
+        for stem in stems:
+            stem_name = stem['name']
+            
+            # Use file path from database or fallback to constructed path
+            stem_file = Path(stem.get('file_path')) if 'file_path' in stem else None
+            
+            if not stem_file or not stem_file.exists():
+                output_dir = Path(job["output_dir"])
+                stem_file = output_dir / f"{stem_name}.wav"
+            
+            if not stem_file.exists():
+                continue
+                
+            # Create proper filename: original_filename_stem.wav
+            original_filename = Path(job["filename"]).stem
+            download_filename = f"{original_filename}_{stem_name}.wav"
+            
+            zip_file.write(stem_file, download_filename)
+    
+    zip_buffer.seek(0)
+    return StreamingResponse(
+        iter([zip_buffer.getvalue()]),
+        media_type="application/zip",
+        headers={
+            "Content-Disposition": f"attachment; filename={Path(job['filename']).stem}_stems.zip"
+        }
+    )
+
 @router.delete("/job/{job_id}")
 async def delete_job(job_id: str):
     """

@@ -1,0 +1,39 @@
+---
+alwaysApply: true
+---
+# Stem Separator Project Structure
+
+This is a full-stack audio stem separation application with:
+
+## Backend (FastAPI)
+- Main entry: [app/main.py](mdc:app/main.py) - FastAPI application setup
+- API Routes:
+  - [app/api/audio.py](mdc:app/api/audio.py) - Audio upload, processing, and download endpoints
+  - [app/api/jobs.py](mdc:app/api/jobs.py) - Job management and status tracking
+  - [app/api/features.py](mdc:app/api/features.py) - Feature flag management
+- Services:
+  - [app/services/audio_processor.py](mdc:app/services/audio_processor.py) - Audio stem separation logic
+  - [app/services/job_manager.py](mdc:app/services/job_manager.py) - Job queue management
+  - [app/services/db_job_service.py](mdc:app/services/db_job_service.py) - Database operations for jobs
+- Models:
+  - [app/models/db_models.py](mdc:app/models/db_models.py) - SQLAlchemy database models
+  - [app/models/audio.py](mdc:app/models/audio.py) - Pydantic models for API
+
+## Frontend (React + TypeScript)
+- Main entry: [frontend/src/index.tsx](mdc:frontend/src/index.tsx)
+- Key Components:
+  - [frontend/src/App.tsx](mdc:frontend/src/App.tsx) - Main app with routing
+  - [frontend/src/components/Dashboard.tsx](mdc:frontend/src/components/Dashboard.tsx) - Project listing
+  - [frontend/src/components/JobsManager.tsx](mdc:frontend/src/components/JobsManager.tsx) - Active job monitoring
+  - [frontend/src/components/ProjectEditor.tsx](mdc:frontend/src/components/ProjectEditor.tsx) - Audio stem editor
+- API Client: [frontend/src/services/api.ts](mdc:frontend/src/services/api.ts)
+
+## Key Features
+- Audio file upload and stem separation (vocals, drums, bass, piano, other)
+- Real-time job status updates via WebSocket
+- Feature flag system for controlling app features
+- Project management with download capabilities
+description:
+globs:
+alwaysApply: false
+---

@@ -1,0 +1,37 @@
+---
+globs: "*.tsx,*.ts"
+---
+# Frontend Patterns and Conventions
+
+## Component Structure
+- Use functional components with TypeScript
+- Components should be in [frontend/src/components/](mdc:frontend/src/components/)
+- Use shadcn/ui components from [frontend/src/components/ui/](mdc:frontend/src/components/ui/)
+- Custom hooks go in [frontend/src/hooks/](mdc:frontend/src/hooks/)
+
+## State Management
+- Use React hooks (useState, useEffect, etc.)
+- Context providers in [frontend/src/providers/](mdc:frontend/src/providers/)
+- Feature flags via FeatureFlagsContext
+
+## API Calls
+- All API calls should go through [frontend/src/services/api.ts](mdc:frontend/src/services/api.ts)
+- Use async/await pattern for API calls
+- Handle errors with try/catch blocks
+
+## Routing
+- Use React Router v6 patterns
+- Route parameters via useParams()
+- Query parameters via useSearchParams()
+- Navigation via useNavigate()
+
+## UI Components
+- Use shadcn/ui components when available
+- Tailwind CSS for styling
+- No inline styles unless absolutely necessary
+- Use cn() utility from [frontend/src/lib/utils.ts](mdc:frontend/src/lib/utils.ts) for conditional classes
+
+## TypeScript
+- Define interfaces for all props
+- Use proper typing for API responses
+- Avoid using 'any' type

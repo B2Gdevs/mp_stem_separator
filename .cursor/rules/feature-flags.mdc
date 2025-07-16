@@ -1,0 +1,48 @@
+---
+description: Feature flag system implementation and usage
+---
+# Feature Flag System
+
+## Backend Implementation
+- Database model: [app/models/db_models.py](mdc:app/models/db_models.py) - `FeatureFlag` table
+- API endpoints: [app/api/features.py](mdc:app/api/features.py)
+  - `GET /api/features` - List all feature flags
+  - `POST /api/features` - Create new flag
+  - `PUT /api/features/{name}` - Update flag
+  - `DELETE /api/features/{name}` - Delete flag
+
+## Frontend Implementation
+- Context: [frontend/src/contexts/FeatureFlagsContext.tsx](mdc:frontend/src/contexts/FeatureFlagsContext.tsx)
+- Provider wraps entire app in [frontend/src/App.tsx](mdc:frontend/src/App.tsx)
+- Hook usage: `const { getFeatureFlag, updateFeatureFlag } = useFeatureFlags()`
+
+## Feature Flag Structure
+```typescript
+interface FeatureFlag {
+  name: string;
+  enabled: boolean;
+  description?: string;
+  created_at: string;
+  updated_at: string;
+}
+```
+
+## Common Flags
+- `dev_mode`: Enable developer mode features
+- `advanced_editor`: Enable advanced audio editor features
+- `batch_processing`: Enable batch audio processing
+
+## Usage Pattern
+```typescript
+const { getFeatureFlag } = useFeatureFlags();
+const isDevMode = getFeatureFlag('dev_mode');
+
+if (isDevMode) {
+  // Show dev features
+}
+```
+
+## Settings Management
+- Settings page at `/settings` route
+- App tab manages feature flags
+- Changes persist to database

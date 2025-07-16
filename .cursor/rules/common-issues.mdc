@@ -1,0 +1,52 @@
+---
+description: Common issues and their solutions in the Stem Separator project
+---
+# Common Issues and Solutions
+
+## DevWrapper/DevMode Issues
+**Problem**: "useDevMode must be used within a DevModeProvider" error
+**Solution**: DevWrapper components have been removed. Use feature flags instead for conditional features.
+
+## Routing Issues
+**Problem**: Navigation to project editor not working
+**Solution**: Use query parameters for project navigation:
+```typescript
+navigate(`/projects?id=${jobId}`);
+```
+
+## API Download Issues
+**Problem**: Download all stems not working
+**Solution**: Use the correct endpoint format:
+```typescript
+const downloadUrl = `${API_BASE_URL}/api/audio/download/${jobId}`;
+```
+
+## Missing Components
+**Problem**: Components referenced but not found
+**Solution**: Check these key components exist:
+- [frontend/src/components/Dashboard.tsx](mdc:frontend/src/components/Dashboard.tsx)
+- [frontend/src/components/JobsManager.tsx](mdc:frontend/src/components/JobsManager.tsx)
+- [frontend/src/components/ProjectEditor.tsx](mdc:frontend/src/components/ProjectEditor.tsx)
+- [frontend/src/components/editor/](mdc:frontend/src/components/editor/) - Editor sub-components
+
+## Build Issues
+**Problem**: TypeScript errors on build
+**Solution**: 
+- Ensure all imports are correct
+- Check for unused imports
+- Verify all referenced components exist
+- Run `npm run build` in frontend directory to test
+
+## Database Issues
+**Problem**: Feature flags not persisting
+**Solution**: 
+- Check database migrations are run
+- Verify SQLite database exists at `app.db`
+- Check API endpoints are returning data
+
+## File Upload Issues
+**Problem**: Audio upload failing
+**Solution**:
+- Check temp directory exists and is writable
+- Verify file size limits in backend
+- Ensure CORS is properly configured

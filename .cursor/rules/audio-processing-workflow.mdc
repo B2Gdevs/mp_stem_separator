@@ -1,0 +1,40 @@
+---
+description: Audio processing and stem separation workflow
+---
+# Audio Processing Workflow
+
+## Processing Pipeline
+1. **Upload**: Audio file uploaded via `/api/audio/upload`
+2. **Job Creation**: Job created with unique ID and "pending" status
+3. **Processing**: Background task processes audio using Demucs model
+4. **Stem Generation**: Creates 5 stems (vocals, drums, bass, piano, other)
+5. **Storage**: Stems saved to `separated/{job_id}/` directory
+6. **Completion**: Job status updated to "completed"
+
+## Job States
+- `pending`: Job created, waiting to process
+- `processing`: Currently being processed
+- `completed`: Successfully processed
+- `failed`: Processing failed with error
+
+## File Structure
+```
+separated/
+└── {job_id}/
+    ├── vocals.wav
+    ├── drums.wav
+    ├── bass.wav
+    ├── piano.wav
+    └── other.wav
+```
+
+## API Endpoints
+- `POST /api/audio/upload` - Upload audio file
+- `GET /api/jobs` - List all jobs
+- `GET /api/jobs/{job_id}` - Get job details
+- `GET /api/audio/download/{job_id}` - Download all stems as zip
+- `GET /api/audio/download/{job_id}/{stem_type}` - Download individual stem
+
+## WebSocket Updates
+- Connect to `/ws` for real-time job status updates
+- Messages format: `{"job_id": "...", "status": "...", "progress": 0-100}`
