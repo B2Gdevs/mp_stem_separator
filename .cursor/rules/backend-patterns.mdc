@@ -1,0 +1,44 @@
+---
+globs: "app/**/*.py"
+---
+# Backend Patterns and Conventions
+
+## FastAPI Structure
+- API endpoints in [app/api/](mdc:app/api/) directory
+- Service layer in [app/services/](mdc:app/services/) for business logic
+- Database models in [app/models/db_models.py](mdc:app/models/db_models.py)
+- Pydantic models in [app/models/](mdc:app/models/) for request/response
+
+## API Endpoint Patterns
+```python
+@router.post("/endpoint", response_model=ResponseModel)
+async def endpoint_name(
+    request: RequestModel,
+    db: Session = Depends(get_db)
+):
+    # Service layer handles business logic
+    return await service.process(request, db)
+```
+
+## Database Operations
+- Use SQLAlchemy models with proper relationships
+- Always use database sessions with dependency injection
+- Handle transactions properly with commit/rollback
+- Use Alembic for database migrations
+
+## Error Handling
+- Use HTTPException for API errors
+- Return proper status codes (200, 201, 400, 404, 500)
+- Include meaningful error messages
+
+## Job Processing
+- Background jobs use JobManager service
+- Status updates via WebSocket connections
+- Store job metadata in database
+- Clean up completed jobs periodically
+
+## File Handling
+- Upload files to temp directory first
+- Process in background jobs
+- Store results in 'separated' directory
+- Clean up temporary files after processing
